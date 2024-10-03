@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="pluton_mobile_app"
+        android:label="Pluton Mobile App"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
