@@ -9,6 +9,10 @@ class SplashView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final SplashController controller = Get.put(SplashController());
-    return const Scaffold();
+    return const Scaffold(
+      body: Center(
+        child: Text("Splash Screen needs to be developed"),
+      ),
+    );
   }
 }

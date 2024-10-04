@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "226399183246",
+    "project_id": "pluton-mobile-app",
+    "storage_bucket": "pluton-mobile-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:226399183246:android:6d0e426f23a5c3134444df",
+        "android_client_info": {
+          "package_name": "com.example.pluton_mobile_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "226399183246-o7hh8kj5kv9eu4fp3hfhbqnnol3c687h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.pluton_mobile_app",
+            "certificate_hash": "14b5ffb1093196a05c2cf179e9401435ae87d18d"
+          }
+        },
+        {
+          "client_id": "226399183246-m928387mnhmosbue03go22er5td731v0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJJSGFmRDS7iERiBxk4tQk32UA4lgyZsY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "226399183246-m928387mnhmosbue03go22er5td731v0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

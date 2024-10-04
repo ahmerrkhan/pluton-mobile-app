@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pluton_mobile_app/routing/app_routes.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 

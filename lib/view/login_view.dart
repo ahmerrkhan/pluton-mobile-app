@@ -12,7 +12,9 @@ class LoginView extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: ElevatedButton(
-            onPressed: () {}, child: const Text("Signin with Google")),
+            onPressed: ()async {
+              await controller.signInWithGoogle();
+            }, child: const Text("Signin with Google")),
       ),
     );
   }
