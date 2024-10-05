@@ -1,13 +1,11 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:pluton_mobile_app/services/network_service.dart';
 
 class AddPostController extends GetxController {
-  var isSubmitting = false.obs;  // State for submission progress
+  var isSubmitting = false.obs;
 
   // Text controllers for the form fields
   final TextEditingController titleController = TextEditingController();
@@ -15,7 +13,6 @@ class AddPostController extends GetxController {
 
   final NetworkService _networkService = NetworkService();
 
-  // Dispose the text controllers when not needed
   @override
   void onClose() {
     titleController.dispose();
@@ -35,25 +32,28 @@ class AddPostController extends GetxController {
 
     try {
       isSubmitting(true);
-      // Prepare the data for the new post
       final data = {
         'title': title,
-        // 'body': body,
-        'userId': 1,  // Assuming a dummy user ID for now
+        'userId': 1,
       };
-
       final response = await _networkService.postRequest('posts/add', data);
-
       print("Printing response : ${response?.data}");
 
       if (response != null) {
-        Get.back();  // Go back after successful post creation
-        // Get.snackbar("Success", "Post created successfully");
-       Fluttertoast.showToast(msg: "Post created successfully",
-        textColor: Colors.black,
-        backgroundColor: const Color(0xffD3D3D3));
+        Get.back();
+        Fluttertoast.showToast(
+            msg: "Post created successfully",
+            textColor: Colors.black,
+            backgroundColor: const Color(0xffD3D3D3));
       } else {
-        Get.snackbar("Error", "Failed to create post");
+        // Internet check
+        final Connectivity _connectivity = Connectivity();
+        var connectivityResult = await _connectivity.checkConnectivity();
+        if (connectivityResult == ConnectivityResult.none) {
+          // Offline: Show toast
+          Fluttertoast.showToast(
+              msg: "No internet connection", backgroundColor: Colors.red);
+        }
       }
     } catch (e) {
       print("Error adding post: $e");

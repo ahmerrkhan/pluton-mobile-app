@@ -1,29 +1,32 @@
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:pluton_mobile_app/controller/favorite_controller.dart';
 import 'package:pluton_mobile_app/model/posts_model.dart';
 import 'package:pluton_mobile_app/services/network_service.dart';
+import 'package:pluton_mobile_app/services/offline_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class HomeController extends GetxController {
   RxString? displayName = "".obs;
   RxString? email = "".obs;
   RxString? photoUrl = "".obs;
   var posts = <Post>[].obs;
-  var isLoading = false.obs; 
+  var isLoading = false.obs;
   var currentPage = 1.obs;
-  var hasMoreData = true.obs;     
+  var hasMoreData = true.obs;
 
   final NetworkService _networkService = NetworkService();
+  final OfflineService _offlineService = OfflineService();
+  final Connectivity _connectivity = Connectivity();
   final FavoriteController favoriteController = Get.put(FavoriteController());
 
   @override
   void onInit() {
     super.onInit();
     getUserData();
-    fetchPosts(); 
+    _fetchPosts();
   }
 
   Future<void> getUserData() async {
@@ -34,22 +37,38 @@ class HomeController extends GetxController {
     update();
   }
 
- // Fetch posts with pagination
+  Future<void> _fetchPosts({int page = 1}) async {
+    var connectivityResult = await _connectivity.checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      // Offline Mode: Fetch posts from local storage
+      fetchLocalPosts();
+      return;
+    }
+    // Online Mode: Fetch posts from API and update local DB
+    await fetchPosts(page: page);
+  }
+
+  // Fetch posts from API
   Future<void> fetchPosts({int page = 1}) async {
-    if (!hasMoreData.value) return;  // Stop fetching if no more data
+    if (!hasMoreData.value) return;
 
     try {
       isLoading(true);
-      final response = await _networkService.getRequest('posts', queryParams: {'limit': 10, 'skip': (page - 1) * 10});
-      
+      //Pagination implemented here
+      final response = await _networkService.getRequest('posts',
+          queryParams: {'limit': 10, 'skip': (page - 1) * 10});
+
       if (response != null && response.statusCode == 200) {
         List<dynamic> postList = response.data['posts'];
-
         if (postList.isEmpty) {
-          hasMoreData(false);  
+          hasMoreData(false);
         } else {
-          posts.addAll(postList.map((e) => Post.fromJson(e)).toList()); 
-          currentPage.value = page; 
+          List<Post> fetchedPosts =
+              postList.map((e) => Post.fromJson(e)).toList();
+          posts.addAll(fetchedPosts);
+          currentPage.value = page;
+          // Save fetched posts to local storage
+          _offlineService.insertPosts(fetchedPosts);
         }
       }
     } catch (e) {
@@ -59,27 +78,51 @@ class HomeController extends GetxController {
     }
   }
 
+  Future<void> fetchLocalPosts() async {
+    isLoading(true);
+    posts.value = await _offlineService.fetchLocalPosts();
+    isLoading(false);
+  }
+
+  // Delete post both from local DB and API
   Future<void> deletePost(int postId) async {
+    var connectivityResult = await _connectivity.checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      _showNoInternetToast();
+      return;
+    }
+
     try {
-      final response = await _networkService.deleteRequest('posts/$postId'); // Adjust the endpoint as necessary
+      final response = await _networkService.deleteRequest('posts/$postId');
 
       if (response != null && response.statusCode == 200) {
-        // Remove the post from the local list
-        posts.removeWhere((post) => post.id == postId); // Assuming each Post has a unique 'id' field
-        update(); // Notify listeners to update the UI
+        posts.removeWhere((post) => post.id == postId);
+        _offlineService.deletePost(postId);
+        update();
       }
     } catch (e) {
       print("Error deleting post: $e");
     }
   }
 
-  @override
-  void onReady() {
-    super.onReady();
+  Future<void> deleteAllPosts() async {
+    var connectivityResult = await _connectivity.checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      _showNoInternetToast();
+      return;
+    }
+
+    try {
+      // Delete all posts from the api
+      posts.clear();
+      await _offlineService.deleteAllPosts();
+      update();
+    } catch (e) {
+      print("Error deleting all posts: $e");
+    }
   }
 
-  @override
-  void onClose() {
-    super.onClose();
+  void _showNoInternetToast() {
+    Fluttertoast.showToast(msg: "No Internet connection");
   }
 }

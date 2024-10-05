@@ -1,9 +1,11 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:pluton_mobile_app/controller/favorite_controller.dart';
 import 'package:pluton_mobile_app/controller/home_controller.dart';
 import 'package:pluton_mobile_app/controller/login_controller.dart';
+import 'package:pluton_mobile_app/model/posts_model.dart';
 import 'package:pluton_mobile_app/view/add_new_post_view.dart';
 import 'package:pluton_mobile_app/view/favorite_view.dart';
 
@@ -17,11 +19,11 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   final HomeController controller = Get.put(HomeController());
   final LoginController loginController = Get.put(LoginController());
-  final FavoriteController favoriteController =
-      Get.put(FavoriteController()); // Favorite controller
-  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  final FavoriteController favoriteController = Get.put(FavoriteController());
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final ScrollController _scrollController = ScrollController();
+  final Connectivity _connectivity = Connectivity();
 
   @override
   void initState() {
@@ -77,6 +79,40 @@ class _HomeViewState extends State<HomeView> {
                 Get.back();
               },
             ),
+            const Divider(),
+            // Delete All Posts functionality
+            ListTile(
+              leading: const Icon(Icons.delete_forever, color: Colors.red),
+              title: const Text('Delete All Posts'),
+              onTap: () async {
+                var connectivityResult =
+                    await _connectivity.checkConnectivity();
+                if (connectivityResult == ConnectivityResult.none) {
+                  // Offline: Show toast
+                  Fluttertoast.showToast(
+                      msg: "No internet connection",
+                      backgroundColor: Colors.red);
+                } else {
+                  // Online: Confirm and delete all posts
+                  Get.defaultDialog(
+                    title: "Delete All Posts",
+                    middleText: "Are you sure you want to delete all posts?",
+                    confirm: TextButton(
+                      onPressed: () {
+                        var favoritePosts = <Post>[].obs;
+                        controller.deleteAllPosts();
+                        Get.back();
+                      },
+                      child: const Text("Yes"),
+                    ),
+                    cancel: TextButton(
+                      onPressed: () => Get.back(),
+                      child: const Text("No"),
+                    ),
+                  );
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -92,7 +128,7 @@ class _HomeViewState extends State<HomeView> {
         centerTitle: true,
         title: const Text("Home Screen",
             style: TextStyle(color: Colors.white, fontSize: 17)),
-        backgroundColor: const Color(0xFF5A4FCF), // Semi-transparent black
+        backgroundColor: const Color(0xFF5A4FCF),
         actions: [
           IconButton(
             onPressed: () => Get.to(() => const FavoriteView()),
@@ -101,6 +137,7 @@ class _HomeViewState extends State<HomeView> {
           IconButton(
             onPressed: () {
               loginController.signOutFromGoogle();
+              loginController.removeCredentials();
             },
             icon: const Icon(Icons.logout, color: Colors.white),
           ),
@@ -123,7 +160,11 @@ class _HomeViewState extends State<HomeView> {
           ),
           Obx(() {
             if (controller.isLoading.value && controller.posts.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                  child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3.0,
+              ));
             }
 
             return ListView.builder(
@@ -140,101 +181,116 @@ class _HomeViewState extends State<HomeView> {
 
                 final post = controller.posts[index];
 
-                // Wrap the favorite icon in Obx to listen for changes in the favorite list
                 return Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-  child: Card(
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    elevation: 4,
-    child: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  post.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  post.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              Obx(() {
+                                final isFavorite =
+                                    favoriteController.isFavorite(post);
+                                return IconButton(
+                                  icon: Icon(isFavorite
+                                      ? Icons.favorite
+                                      : Icons.favorite_border),
+                                  color: isFavorite ? Colors.red : Colors.grey,
+                                  onPressed: () {
+                                    favoriteController.toggleFavorite(post);
+                                  },
+                                );
+                              }),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () async {
+                                  var connectivityResult =
+                                      await _connectivity.checkConnectivity();
+                                  if (connectivityResult ==
+                                      ConnectivityResult.none) {
+                                    // Offline: Show toast
+                                    Fluttertoast.showToast(
+                                        msg: "No internet connection",
+                                        backgroundColor: Colors.red);
+                                  } else {
+                                    // Online: Confirm and delete post
+                                    Get.defaultDialog(
+                                      title: "Delete Post",
+                                      middleText:
+                                          "Are you sure you want to delete this post?",
+                                      confirm: TextButton(
+                                        onPressed: () {
+                                          controller.deletePost(post.id);
+                                          Get.back();
+                                        },
+                                        child: const Text("Yes"),
+                                      ),
+                                      cancel: TextButton(
+                                        onPressed: () => Get.back(),
+                                        child: const Text("No"),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            post.body,
+                            style: const TextStyle(fontSize: 13),
+                            maxLines: 6,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.thumb_up,
+                                        color: Colors.blue),
+                                    onPressed: () {},
+                                  ),
+                                  Text('${post.likes}'),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.thumb_down,
+                                        color: Colors.red),
+                                    onPressed: () {},
+                                  ),
+                                  Text('${post.dislikes}'),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              // Update here: wrap IconButton in Obx
-              Obx(() {
-                final isFavorite = favoriteController.isFavorite(post);
-                return IconButton(
-                  icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
-                  color: isFavorite ? Colors.red : Colors.grey,
-                  onPressed: () {
-                    favoriteController.toggleFavorite(post); // Toggle favorite state
-                  },
                 );
-              }),
-              IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () {
-                  // Confirm deletion
-                  Get.defaultDialog(
-                    title: "Delete Post",
-                    middleText: "Are you sure you want to delete this post?",
-                    confirm: TextButton(
-                      onPressed: () {
-                        controller.deletePost(post.id); // Call the delete method
-                        Get.back(); // Close the dialog
-                      },
-                      child: const Text("Yes"),
-                    ),
-                    cancel: TextButton(
-                      onPressed: () => Get.back(),
-                      child: const Text("No"),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            post.body,
-            style: const TextStyle(fontSize: 13),
-            maxLines: 6,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.thumb_up, color: Colors.blue),
-                    onPressed: () {},
-                  ),
-                  Text('${post.likes}'),
-                ],
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.thumb_down, color: Colors.red),
-                    onPressed: () {},
-                  ),
-                  Text('${post.dislikes}'),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-  ),
-);
-
               },
             );
           }),

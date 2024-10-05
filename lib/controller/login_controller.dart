@@ -27,11 +27,10 @@ class LoginController extends GetxController {
   Future<dynamic> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-      // Check if user is null (indicates that the sign-in was canceled)
+      // Check if user is null
       if (googleUser == null) {
         print("User canceled the Google sign-in");
-        return; // or you can show a message to the user
+        return;
       }
 
       final GoogleSignInAuthentication? googleAuth =
@@ -46,9 +45,7 @@ class LoginController extends GetxController {
       UserCredential userCredential =
           await FirebaseAuth.instance.signInWithCredential(credential);
 
-      // Get user info
       User? user = userCredential.user;
-
       if (user != null) {
         // Store user info in SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -60,9 +57,10 @@ class LoginController extends GetxController {
         print("User signed in and data stored locally ${user.uid}");
 
         // Navigate to the HomeView
-        Fluttertoast.showToast(msg: "User logged in successfully",
-        textColor: Colors.black,
-        backgroundColor: const Color(0xffD3D3D3));
+        Fluttertoast.showToast(
+            msg: "User logged in successfully",
+            textColor: Colors.black,
+            backgroundColor: const Color(0xffD3D3D3));
         Get.off(() => const HomeView());
       }
     } on PlatformException catch (e) {
@@ -76,18 +74,26 @@ class LoginController extends GetxController {
     try {
       await FirebaseAuth.instance.signOut();
       await GoogleSignIn().signOut();
-
       // Clear user data from SharedPreferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.remove('uid');
-      await prefs.remove('displayName');
-      await prefs.remove('email');
-      await prefs.remove('photoUrl');
-
+      removeCredentials();
       Get.off(() => const LoginView());
       return true;
     } on Exception catch (_) {
       return false;
     }
+  }
+
+  Future removeCredentials() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('uid');
+    await prefs.remove(
+      'displayName',
+    );
+    await prefs.remove(
+      'email',
+    );
+    await prefs.remove(
+      'photoUrl',
+    );
   }
 }

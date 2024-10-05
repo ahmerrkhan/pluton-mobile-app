@@ -18,8 +18,8 @@ class Post {
       id: json['id'],
       title: json['title'],
       body: json['body'],
-      likes: json['reactions']['likes'] ?? 0,
-      dislikes: json['reactions']['dislikes'] ?? 0,
+      likes: json['reactions']['likes'],
+      dislikes: json['reactions']['dislikes'],
     );
   }
 
@@ -28,10 +28,8 @@ class Post {
       'id': id,
       'title': title,
       'body': body,
-      'reactions': {
-        'likes': likes,
-        'dislikes': dislikes,
-      },
+      'likes': likes,
+      'dislikes': dislikes,
     };
   }
 }

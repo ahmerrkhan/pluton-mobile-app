@@ -44,6 +44,8 @@ dependencies:
   fluttertoast: ^8.2.8
   sqflite: ^2.3.3+2
   animate_do: ^3.3.4
+  path: ^1.8.0
+  connectivity_plus: ^2.3.2
   
 
 dev_dependencies:
