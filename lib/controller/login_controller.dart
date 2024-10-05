@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pluton_mobile_app/view/home_view.dart';
@@ -55,9 +57,12 @@ class LoginController extends GetxController {
         await prefs.setString('email', user.email ?? '');
         await prefs.setString('photoUrl', user.photoURL ?? '');
 
-        print("User signed in and data stored locally");
+        print("User signed in and data stored locally ${user.uid}");
 
         // Navigate to the HomeView
+        Fluttertoast.showToast(msg: "User logged in successfully",
+        textColor: Colors.black,
+        backgroundColor: const Color(0xffD3D3D3));
         Get.off(() => const HomeView());
       }
     } on PlatformException catch (e) {
